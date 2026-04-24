@@ -40,7 +40,7 @@ public partial class MapParser : Node
             var maps = new ConcurrentBag<Map>();
 
             Callable.From(() => Instance.EmitSignal(SignalName.MapsImportStarted)).CallDeferred();
-            Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = System.Environment.ProcessorCount / 4 }, file =>
+            Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = Math.Max(System.Environment.ProcessorCount / 4, 1) }, file =>
             {
                 try
                 {
