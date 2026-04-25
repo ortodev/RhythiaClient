@@ -705,7 +705,6 @@ stretch_mode = 1
 
 [node name="Video" type="MeshInstance3D" parent="." unique_id=1036410191]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.479675, -0.459572, -99.9929)
-visible = false
 material_override = SubResource("StandardMaterial3D_rj3ky")
 transparency = 1.0
 cast_shadow = 0
@@ -718,6 +717,7 @@ size = Vector2i(1920, 1080)
 
 [node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="Video/VideoViewport" unique_id=61327167]
 material = SubResource("ShaderMaterial_4qlgx")
+clip_contents = true
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

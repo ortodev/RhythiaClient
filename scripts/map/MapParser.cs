@@ -136,7 +136,8 @@ public partial class MapParser : Node
 
             if (map.AudioBuffer != null) addAsset($"audio.{map.AudioExt}", map.AudioBuffer);
             if (map.CoverBuffer != null) addAsset($"cover.png", map.CoverBuffer);
-            if (map.VideoBuffer != null) addAsset($"video.mp4", map.VideoBuffer);
+            // if (map.VideoBuffer != null) addAsset($"video.mp4", map.VideoBuffer);
+            if (map.VideoBuffer != null) addAsset($"video.ogv", map.VideoBuffer);
         }
 
         map.Hash = Convert.ToHexString(MD5.HashData(ms.ToArray())).ToLower();
@@ -598,7 +599,8 @@ public partial class MapParser : Node
 
             if ((bool)metadata["HasVideo"])
             {
-                videoBuffer = getEntryBuffer("video.mp4");
+                // videoBuffer = getEntryBuffer("video.mp4");
+                videoBuffer = getEntryBuffer("video.ogv");
             }
 
             uint typeCount = objects.GetUInt32();

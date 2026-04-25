@@ -607,6 +607,7 @@ public partial class LegacyRunner : BaseScene
         replayViewerPause.Pressed += () =>
         {
             Playing = !Playing;
+            video.Paused = !video.Paused;
             SoundManager.Song.PitchScale = Playing ? (float)CurrentAttempt.Speed : 0.00000000000001f;   // ooohh my goood
             replayViewerPause.TextureNormal = GD.Load<Texture2D>(Playing ? "res://textures/pause.png" : "res://textures/play.png");
         };
@@ -662,13 +663,19 @@ public partial class LegacyRunner : BaseScene
                 }
             }
 
-            if (!SoundManager.Song.Playing)
-            {
-                SoundManager.Song.Play();
-            }
+			if (!SoundManager.Song.Playing)
+			{
+				SoundManager.Song.Play();
+			}
+
+			if (!video.IsPlaying() && CurrentAttempt.Map.VideoBuffer != null && settings.VideoDim < 100)
+			{
+				video.Play();
+			}
 
             double audioTime = Math.Max(0, CurrentAttempt.Progress + settings.LocalOffset.Value);
             SoundManager.Song.Seek((float)audioTime / 1000);
+			video.StreamPosition = (float)CurrentAttempt.Progress / 1000;
         };
         replayViewerSeek.FocusEntered += () =>
         {
@@ -809,26 +816,29 @@ public partial class LegacyRunner : BaseScene
 
         MapLength += Constants.HIT_WINDOW + 1000;
 
-        // TODO: Fix videos
-
-        //if (settings.VideoDim < 100 && CurrentAttempt.Map.VideoBuffer != null)
-        //{
-        //    if (CurrentAttempt.Speed != 1)
-        //    {
-        //        ToastNotification.Notify("Videos currently only sync on 1x", 1);
-        //    }
-        //          else
-        //          {
-        //              //File.WriteAllBytes($"{Constants.USER_FOLDER}/cache/video.mp4", CurrentAttempt.Map.VideoBuffer);
-        //              video.Stream.File = $"{MapUtil.MapsCacheFolder}/{CurrentAttempt.Map.Name}/video.mp4";
-        //    }
-        //}
-        if (CurrentAttempt.Replays != null)
-        {
-            if (CurrentAttempt.Replays.Length > 1)
+		if (settings.VideoDim < 100 && CurrentAttempt.Map.VideoBuffer != null)
+		{
+			if (CurrentAttempt.Speed != 1)
+			{
+				// setting different video speeds using godot causes a lot of lag
+				ToastNotification.Notify("Videos currently only sync on 1x", 1);
+			}
+			else
             {
-                CurrentAttempt.Replays[0].Pushback = false;
-            }
+               //File.WriteAllBytes($"{Constants.USER_FOLDER}/cache/video.mp4", CurrentAttempt.Map.VideoBuffer);
+			   video.Stream = new VideoStreamTheora();
+
+            //    video.Stream.File = $"{MapUtil.MapsCacheFolder}/{CurrentAttempt.Map.Name}/video.mp4";
+               video.Stream.File = $"{MapUtil.MapsCacheFolder}/{CurrentAttempt.Map.Name}/video.ogv";
+			}
+		}
+
+		if (CurrentAttempt.Replays != null)
+		{
+			if (CurrentAttempt.Replays.Length > 1)
+			{
+				CurrentAttempt.Replays[0].Pushback = false;
+			}
 
             CurrentAttempt.Mods["Spin"] = true;
             Cursors = new MeshInstance3D[CurrentAttempt.Replays.Length];
@@ -1040,9 +1050,9 @@ public partial class LegacyRunner : BaseScene
         CurrentAttempt.Progress += delta * 1000 * CurrentAttempt.Speed;
         CurrentAttempt.Skippable = false;
 
-        startGameplayMediaAtExpected(isPauseRampActive() ? SoundManager.Song.VolumeDb : getTargetMusicVolumeDb());
+		startGameplayMediaAtExpected(isPauseRampActive() ? SoundManager.Song.VolumeDb : getTargetMusicVolumeDb());
 
-        int nextNoteMillisecond = CurrentAttempt.PassedNotes >= CurrentAttempt.Map.Notes.Length ? (int)MapLength + 5000 : CurrentAttempt.Map.Notes[CurrentAttempt.PassedNotes].Millisecond;
+		int nextNoteMillisecond = CurrentAttempt.PassedNotes >= CurrentAttempt.Map.Notes.Length ? (int)MapLength + 5000 : CurrentAttempt.Map.Notes[CurrentAttempt.PassedNotes].Millisecond;
         int lastNoteMillisecond = CurrentAttempt.PassedNotes > 0 ? CurrentAttempt.Map.Notes[CurrentAttempt.PassedNotes - 1].Millisecond : 0;
 
         if (nextNoteMillisecond - lastNoteMillisecond > 5000 && nextNoteMillisecond >= Math.Max(CurrentAttempt.Progress + 3000 * CurrentAttempt.Speed, 1100 * CurrentAttempt.Speed))
@@ -1296,6 +1306,7 @@ public partial class LegacyRunner : BaseScene
                         else
                         {
                             ShowMenu(!MenuShown);
+							video.Paused = true;
                         }
 
                         break;
@@ -1312,6 +1323,7 @@ public partial class LegacyRunner : BaseScene
                         if (CurrentAttempt.IsReplay)
                         {
                             Playing = !Playing;
+                            video.Paused = !video.Paused;
                             SoundManager.Song.PitchScale = Playing ? (float)CurrentAttempt.Speed : 0.00000000000001f;   // ooohh my goood
                             replayViewerPause.TextureNormal = GD.Load<Texture2D>(Playing ? "res://textures/ui/pause.png" : "res://textures/ui/play.png");
                         }
@@ -1425,6 +1437,15 @@ public partial class LegacyRunner : BaseScene
 
                     double targetTime = Math.Max(0, CurrentAttempt.Progress + settings.LocalOffset.Value);
                     SoundManager.Song.Seek((float)targetTime / 1000);
+                }
+                if (CurrentAttempt.Map.VideoBuffer != null)
+                {
+                    if (!video.IsPlaying())
+                    {
+                        video.Play();
+                    }
+
+                    double targetTime = Math.Max(0, CurrentAttempt.Progress + settings.LocalOffset.Value);
                     video.StreamPosition = (float)targetTime / 1000;
                 }
             }
@@ -1552,6 +1573,10 @@ public partial class LegacyRunner : BaseScene
                 Tween videoInTween = videoQuad.CreateTween();
                 videoInTween.TweenProperty(videoQuad, "transparency", settings.VideoDim / 100, 0.5);
                 videoInTween.Play();
+            }
+            if (video.Paused)
+            {
+                video.Paused = !video.Paused;
             }
         }
     }
